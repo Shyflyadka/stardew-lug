@@ -56,7 +56,7 @@ namespace Lug
 
             var files = SettingsCard(settingsBoard, "Файлы и диагностика", 1, 1);
             SettingsLine(files, "Активная сборка: " + store.BuildName(), Theme.Muted);
-            SettingsButtons(files, Theme.Button("Папка модов", () => Native.Open(store.Active)),
+            SettingsButtons(files, Theme.Button("Папка модов", OpenModsFolder),
                 Theme.Button("Папка данных", () => Native.Open(store.Root)), Theme.Button("Импорт из MO2", OpenImport));
             SettingsButtons(files, Theme.Button("Последний запуск", ViewLastRun),
                 Theme.Button("Папка логов SMAPI", OpenSmapiLogs));

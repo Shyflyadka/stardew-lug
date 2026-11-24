@@ -483,6 +483,8 @@ namespace Lug
             if (!updates && !compat)
             {
                 actions.Controls.Add(Theme.Button("Установить мод", LocalArchive));
+                actions.Controls.Add(Theme.Button("Папка модов", OpenModsFolder));
+                if (mods.Count == 0) actions.Controls.Add(Theme.Button("Обновить список", Reload));
                 actions.Controls.Add(Theme.Button("Пресеты модов", ModPresets));
                 var diagnose = Theme.Button("Разобрать проблемы", DiagnoseBuild);
                 diagnose.Enabled = mods.Count > 0;
@@ -507,7 +509,7 @@ namespace Lug
                 bool mo2 = !string.IsNullOrEmpty(store.Settings.Mo2);
                 Empty(updates || compat ? "В сборке пока нет модов" : "Твоя библиотека пока пуста",
                     updates ? "Здесь будут обновления установленных модов." : compat ? "Импортируй сборку или установи мод." :
-                    mo2 ? "Можно перенести моды из найденного профиля SDV MO2." : "Добавь мод или установи готовую сборку из ZIP.",
+                    mo2 ? "Можно перенести моды из найденного профиля SDV MO2." : "Распакуй мод в папку модов и нажми «Обновить список».",
                     updates || compat ? (Action)(() => ShowView("mods")) : mo2 ? OpenImport : (Action)OpenPack,
                     updates || compat ? "К моим модам" : mo2 ? "Импорт из MO2" : "Выбрать сборку");
                 return;
@@ -677,6 +679,18 @@ namespace Lug
             await Run("Читаю список…", async () => { await RefreshMods(); Status("Список обновлён."); });
         }
 
+        private void OpenModsFolder()
+        {
+            if (busy) return;
+            try
+            {
+                store.EnsureBuildFolders();
+                Native.Open(store.Active);
+            }
+            catch (IOException error) { Status(error.Message, Theme.Red); }
+            catch (UnauthorizedAccessException error) { Status(error.Message, Theme.Red); }
+        }
+
         private void RenderCatalog()
         {
             title.Text = "Каталог";
@@ -785,6 +799,7 @@ namespace Lug
             try
             {
                 GameClosed();
+                store.EnsureBuildFolders();
                 bool confirm = !store.Settings.SkipLaunchWarnings;
                 if (confirm && mods.Count == 0 && MessageBox.Show(this, "Список модов пуст. Запустить игру через SMAPI с пустой сборкой?",
                     "Запуск Stardew Valley", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;

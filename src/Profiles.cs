@@ -38,7 +38,7 @@ namespace Lug
             get { return string.IsNullOrEmpty(Settings.SelectedBuild) ? Root : Path.Combine(BuildShelf, Settings.SelectedBuild); }
         }
 
-        private void EnsureBuildFolders()
+        internal void EnsureBuildFolders()
         {
             foreach (var folder in new[] { BuildRoot, Active, Disabled, Backups })
             {

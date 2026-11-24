@@ -293,6 +293,7 @@ namespace Lug
 
         internal List<Mod> ListMods()
         {
+            EnsureBuildFolders();
             var all = new List<Mod>();
             foreach (var root in new[] { Active, Disabled })
                 foreach (string dir in Directory.EnumerateDirectories(root).Where(dir => !IsLink(dir)))
