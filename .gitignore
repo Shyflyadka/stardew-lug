@@ -1,0 +1,7 @@
+/StardewLug.exe
+/StardewLug.exe.*
+/*.pdb
+/*.zip
+/.vs/
+/bin/
+/obj/
