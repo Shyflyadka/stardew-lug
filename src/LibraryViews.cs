@@ -204,13 +204,11 @@ namespace Lug
                 ShowView("builds");
                 if (publicResults == null && !busy) SearchPublicBuilds("", 0);
             }, onlineBuilds));
+            toolbar.Controls.Add(Theme.Button("Опубликовать сборку", PublishBuild, true));
             if (!onlineBuilds)
             {
                 toolbar.Controls.Add(Theme.Button("Новая / копия", NewBuild));
                 toolbar.Controls.Add(Theme.Button("Импорт ZIP", OpenPack));
-                var publish = Theme.Button("Опубликовать сборку", PublishBuild);
-                publish.Enabled = mods.Count > 0;
-                toolbar.Controls.Add(publish);
                 DrawLocalBuilds();
             }
             else DrawPublicBuilds();

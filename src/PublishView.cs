@@ -85,25 +85,32 @@ namespace Lug
 
         private async void PublishBuild()
         {
-            if (busy || mods.Count == 0) return;
-            string repo = store.Preferences().PublishRepository ?? ReadPackRepository(true);
-            if (repo == null) return;
-            string key = store.Settings.PublishKey();
-            if (key.Length == 0) key = ReadPublishKey(false);
-            if (key == null) return;
-            string name = store.BuildName();
-            var options = new object[] { "Без настроек модов", "Включить config.json" };
-            bool configs;
-            using (var choice = new ChoiceDialog("Опубликовать сборку",
-                "«" + name + "» станет доступна всем в " + repo + ". Перед публикацией проверь, можно ли делиться файлами модов.",
-                options, "Опубликовать"))
+            await Run("Проверяю активную сборку…", async () =>
             {
-                if (choice.ShowDialog(this) != DialogResult.OK) return;
-                configs = Equals(choice.Selected, options[1]);
-            }
-            await Run("Проверяю репозиторий…", async () =>
-            {
+                string name = store.BuildName();
+                if (await Task.Run(() => store.ListMods().Count) == 0)
+                {
+                    string message = "Добавь хотя бы один мод в сборку «" + name + "» через вкладку «Моды» и попробуй снова.";
+                    Status(message, Theme.Gold);
+                    MessageBox.Show(this, message, "Сборка пуста", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                string repo = store.Preferences().PublishRepository ?? ReadPackRepository(true);
+                if (repo == null) { Status("Публикация отменена."); return; }
+                string key = store.Settings.PublishKey();
+                if (key.Length == 0) key = ReadPublishKey(false);
+                if (key == null) { Status("Публикация отменена."); return; }
+                var options = new object[] { "Без настроек модов", "Включить config.json" };
+                bool configs;
+                using (var choice = new ChoiceDialog("Опубликовать сборку",
+                    "«" + name + "» станет доступна всем в " + repo + ". Перед публикацией проверь, можно ли делиться файлами модов.",
+                    options, "Опубликовать"))
+                {
+                    if (choice.ShowDialog(this) != DialogResult.OK) { Status("Публикация отменена."); return; }
+                    configs = Equals(choice.Selected, options[1]);
+                }
                 GameClosed();
+                Status("Проверяю репозиторий…");
                 string repository = await sources.CheckPackRepository(repo, key);
                 store.SavePublishRepository(repository);
                 if (key != store.Settings.PublishKey()) SavePublishKey(key);
