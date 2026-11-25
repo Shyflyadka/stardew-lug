@@ -194,7 +194,7 @@ namespace Lug
         private void RenderBuilds()
         {
             title.Text = "Сборки";
-            subhead.Text = onlineBuilds ? "Публичные сборки из GitHub Releases" : "Активная сборка · " + store.BuildName();
+            subhead.Text = onlineBuilds ? "Найди сборку и скачай её прямо в Луге." : "Активная сборка · " + store.BuildName();
             var toolbar = Actions();
             intro.Controls.Add(toolbar);
             toolbar.Controls.Add(Theme.Button("Мои сборки", () => { onlineBuilds = false; ShowView("builds"); }, !onlineBuilds));
@@ -208,7 +208,7 @@ namespace Lug
             {
                 toolbar.Controls.Add(Theme.Button("Новая / копия", NewBuild));
                 toolbar.Controls.Add(Theme.Button("Импорт ZIP", OpenPack));
-                var publish = Theme.Button("Подготовить релиз", () => ExportCurrent(true));
+                var publish = Theme.Button("Опубликовать сборку", PublishBuild);
                 publish.Enabled = mods.Count > 0;
                 toolbar.Controls.Add(publish);
                 DrawLocalBuilds();
@@ -250,6 +250,8 @@ namespace Lug
                     SideAction(panel, "Открыть моды", () => ShowView("mods"), true);
                     SideAction(panel, "Переименовать", RenameBuild);
                     if (mods.Count > 0) SideAction(panel, "Поделиться ZIP", SharePack);
+                    if (!string.IsNullOrEmpty(store.Preferences().PublishRepository))
+                        SideAction(panel, "Сменить репозиторий сборки", ChangePackRepository);
                     if (store.Snapshots().Count > 0) SideAction(panel, "Снимки сборки", RestoreBuildSnapshot);
                 }
                 else SideAction(panel, "Выбрать сборку", () => ActivateBuild(profile), true);
@@ -311,7 +313,7 @@ namespace Lug
             var basePanel = BuildListLayout(true);
             var toolbar = Actions();
             basePanel.Controls.Add(toolbar, 0, 0);
-            var input = Input(onlineTerm, "Название сборки или ссылка GitHub");
+            var input = Input(onlineTerm, "Название сборки или ссылка");
             input.Width = 335;
             input.Margin = new Padding(0, 5, 8, 0);
             toolbar.Controls.Add(input);
@@ -343,12 +345,12 @@ namespace Lug
                 if (build == null)
                 {
                     Side(publicResults == null ? "Публичные сборки" : "Ничего не найдено",
-                        "Открой все публикации или вставь ссылку на публичный релиз.", "");
+                        "Попробуй другое название или вставь ссылку на сборку.", "");
                     return;
                 }
                 var panel = Side(build.Name, build.Repo, "");
                 if (!string.IsNullOrWhiteSpace(build.Description)) SideText(panel, build.Description);
-                SideAction(panel, "Выбрать выпуск", () => FetchPublicBuild(build.Repo, build.Name), true);
+                SideAction(panel, "Скачать сборку", () => FetchPublicBuild(build.Repo, build.Name), true);
                 SideAction(panel, "Страница автора", () => Native.Open("https://github.com/" + build.Repo + "/releases"));
             };
             table.CurrentCellChanged += (sender, args) => draw();
@@ -371,7 +373,7 @@ namespace Lug
 
         private async void FetchPublicBuild(string target, string name)
         {
-            await Run("Проверяю выпуск GitHub…", async () =>
+            await Run("Проверяю сборку…", async () =>
             {
                 var files = await sources.PublicBuildFiles(target);
                 if (files.Count == 0) throw new IOException("В релизе нет архива .lugpack.zip.");
@@ -394,16 +396,6 @@ namespace Lug
                 }
                 finally { if (File.Exists(download)) File.Delete(download); }
             });
-        }
-
-        private void ShowPublishInstructions(string file)
-        {
-            ShowText("Опубликовать сборку", Path.GetFileName(file),
-                "1. Открой или создай публичный репозиторий на GitHub.\r\n" +
-                "2. В разделе About добавь тему " + Sources.BuildTopic + ".\r\n" +
-                "3. В Releases создай обычный релиз и прикрепи архив с расширением .lugpack.zip.\r\n\r\n" +
-                "После публикации сборку можно скачать в Луге по ссылке на релиз. Каталог найдёт репозиторий, когда GitHub проиндексирует тему.");
-            Native.Open(Path.GetDirectoryName(file));
         }
 
         private async void ManageSmapi()

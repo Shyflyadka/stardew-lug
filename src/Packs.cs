@@ -40,6 +40,16 @@ namespace Lug
             destination = Path.GetFullPath(destination);
             if (destination.StartsWith(Root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                 throw new IOException("Сохрани архив вне рабочей папки Луга.");
+            WritePack(destination, launcher, null, configs, progress);
+        }
+
+        internal void ExportPublicPack(string destination, bool configs, Action<string> progress)
+        {
+            WritePack(destination, null, BuildName(), configs, progress);
+        }
+
+        private void WritePack(string destination, string launcher, string publicName, bool configs, Action<string> progress)
+        {
             var mods = ListMods();
             if (mods.Count == 0) throw new IOException("В сборке пока нет модов.");
             if (mods.Count > MaxPackMods) throw new IOException("Сборка слишком большая для формата Луга.");
@@ -47,7 +57,7 @@ namespace Lug
             string name = Regex.Replace(filename, @"(?:\.lugpack)?\.zip$", "", RegexOptions.IgnoreCase);
             var index = new PackManifest
             {
-                Format = 1, Name = name, GameVersion = GameVersion("Stardew Valley.dll"),
+                Format = 1, Name = publicName ?? name, GameVersion = GameVersion("Stardew Valley.dll"),
                 SmapiVersion = GameVersion("StardewModdingAPI.dll"), Mods = new List<PackEntry>()
             };
             var prefs = Preferences();
@@ -59,11 +69,11 @@ namespace Lug
             string temp = Path.Combine(Path.GetDirectoryName(destination), "lug-" + Guid.NewGuid().ToString("N") + ".tmp");
             try
             {
-                int files = 2;
-                long total = new FileInfo(launcher).Length;
+                int files = launcher == null ? 1 : 3;
+                long total = launcher == null ? 0 : new FileInfo(launcher).Length;
                 using (var zip = ZipFile.Open(temp, ZipArchiveMode.Create))
                 {
-                    zip.CreateEntryFromFile(launcher, "StardewLug.exe", CompressionLevel.Fastest);
+                    if (launcher != null) zip.CreateEntryFromFile(launcher, "StardewLug.exe", CompressionLevel.Fastest);
                     for (int i = 0; i < mods.Count; i++)
                     {
                         var mod = mods[i];
@@ -90,9 +100,10 @@ namespace Lug
                     string metadata = Json.Serializer().Serialize(index);
                     if (Encoding.UTF8.GetByteCount(metadata) > MaxPackIndex) throw new IOException("Список модов слишком большой.");
                     WritePackText(zip, PackMarker, metadata);
-                    WritePackText(zip, "README.txt", "Распакуй весь архив в одну папку и открой StardewLug.exe. " +
-                        "Луг предложит установить сборку. Если Луг уже установлен, выбери этот ZIP через «Импорт сборки». " +
-                        "Для запуска нужна Stardew Valley. Луг может установить SMAPI сам.");
+                    if (launcher != null)
+                        WritePackText(zip, "README.txt", "Распакуй весь архив в одну папку и открой StardewLug.exe. " +
+                            "Луг предложит установить сборку. Если Луг уже установлен, выбери этот ZIP через «Импорт сборки». " +
+                            "Для запуска нужна Stardew Valley. Луг может установить SMAPI сам.");
                 }
                 if (File.Exists(destination)) File.Replace(temp, destination, null);
                 else File.Move(temp, destination);

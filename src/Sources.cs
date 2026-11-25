@@ -66,6 +66,7 @@ namespace Lug
         internal const string NexusAccount = "https://www.nexusmods.com/users/myaccount?tab=api";
         private readonly HttpClient http;
         private readonly HttpClient nexus;
+        private readonly HttpClient publisher;
         private readonly Dictionary<int, Tuple<DateTime, object>> fileCache = new Dictionary<int, Tuple<DateTime, object>>();
         private readonly ConcurrentDictionary<int, string> descriptions = new ConcurrentDictionary<int, string>();
 
@@ -73,11 +74,13 @@ namespace Lug
             new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate },
             new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate, AllowAutoRedirect = false }) { }
 
-        internal Sources(HttpMessageHandler publicHandler, HttpMessageHandler nexusHandler)
+        internal Sources(HttpMessageHandler publicHandler, HttpMessageHandler nexusHandler, HttpMessageHandler publishHandler = null)
         {
             http = new HttpClient(publicHandler) { Timeout = TimeSpan.FromSeconds(40) };
             nexus = new HttpClient(nexusHandler) { Timeout = TimeSpan.FromSeconds(30) };
-            foreach (var client in new[] { http, nexus })
+            publisher = new HttpClient(publishHandler ?? new HttpClientHandler { AllowAutoRedirect = false })
+                { Timeout = Timeout.InfiniteTimeSpan };
+            foreach (var client in new[] { http, nexus, publisher })
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("StardewLug/1.5");
         }
 

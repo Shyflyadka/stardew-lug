@@ -19,6 +19,7 @@ namespace Lug
         public List<string> Categories { get; set; }
         public List<ModPreset> Presets { get; set; }
         public AssetOrigin Origin { get; set; }
+        public string PublishRepository { get; set; }
     }
 
     internal sealed class BuildProfile
@@ -98,6 +99,7 @@ namespace Lug
                 var prefs = clone ? Preferences() : new BuildPreferences();
                 prefs.Name = name;
                 prefs.Origin = null;
+                prefs.PublishRepository = null;
                 foreach (var folder in new[] { "Mods", "Disabled" })
                 {
                     var destination = Path.Combine(stage, folder);
@@ -127,6 +129,19 @@ namespace Lug
                 throw new IOException("Введи уникальное имя сборки.");
             var prefs = Preferences();
             prefs.Name = name;
+            Json.Save(Path.Combine(BuildRoot, PreferencesFile), prefs);
+        }
+
+        internal void SavePublishRepository(string repo)
+        {
+            foreach (var build in Builds().Where(build => build.Id != SelectedBuild))
+            {
+                string root = build.Id.Length == 0 ? Root : Path.Combine(BuildShelf, build.Id);
+                if (Names.Equals(PreferencesAt(root).PublishRepository, repo))
+                    throw new IOException("Этот репозиторий уже связан с другой сборкой. Для публикации выбери другой.");
+            }
+            var prefs = Preferences();
+            prefs.PublishRepository = repo;
             Json.Save(Path.Combine(BuildRoot, PreferencesFile), prefs);
         }
 

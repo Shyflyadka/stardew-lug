@@ -233,9 +233,7 @@ namespace Lug
             }
         }
 
-        private void SharePack() { ExportCurrent(false); }
-
-        private async void ExportCurrent(bool publish)
+        private async void SharePack()
         {
             if (busy || mods.Count == 0) return;
             var options = new object[] { "С настройками модов (config.json)", "Без файлов config.json" };
@@ -250,7 +248,7 @@ namespace Lug
             using (var file = new SaveFileDialog
             {
                 Title = "Сохранить сборку", Filter = "Сборка Луга (*.lugpack.zip)|*.lugpack.zip|ZIP-архив (*.zip)|*.zip",
-                FileName = publish ? "Stardew.lugpack.zip" : string.Concat(store.BuildName().Split(Path.GetInvalidFileNameChars())) + ".lugpack.zip",
+                FileName = string.Concat(store.BuildName().Split(Path.GetInvalidFileNameChars())) + ".lugpack.zip",
                 AddExtension = true, DefaultExt = "zip", OverwritePrompt = true
             })
             {
@@ -260,8 +258,7 @@ namespace Lug
                     GameClosed();
                     await Task.Run(() => store.ExportPack(file.FileName, Application.ExecutablePath, configs, Progress));
                     Status("Сборка сохранена: " + file.FileName, Theme.Green);
-                    if (publish) ShowPublishInstructions(file.FileName);
-                    else if (MessageBox.Show(this, "Сборка сохранена. Открыть папку с архивом?", "Поделиться сборкой",
+                    if (MessageBox.Show(this, "Сборка сохранена. Открыть папку с архивом?", "Поделиться сборкой",
                         MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
                         Native.Open(Path.GetDirectoryName(file.FileName));
                 });

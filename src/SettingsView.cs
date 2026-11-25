@@ -42,6 +42,7 @@ namespace Lug
                 value => store.Settings.CompactRows = value);
             SettingsLine(display, "Компактный режим вмещает больше строк на экране.", Theme.Muted);
             SettingsButtons(display, Theme.Button("Источник обновлений Луга", () => ConfigureLauncherSource()));
+            SettingsButtons(display, Theme.Button("Токен публикации сборок", ChangePublishKey));
 
             var account = SettingsCard(settingsBoard, "Nexus Mods", 0, 1);
             bool linked = store.Settings.Key().Length > 0;

@@ -77,13 +77,18 @@ namespace Lug
         public bool MinimizeOnLaunch { get; set; }
         public bool SkipLaunchWarnings { get; set; }
         public string LauncherUpdateSource { get; set; }
+        public string PublishSecret { get; set; }
 
-        internal string Key()
+        internal string Key() { return Unprotect(NexusSecret); }
+        internal string PublishKey() { return Unprotect(PublishSecret); }
+        internal void SetPublishKey(string key) { PublishSecret = Protect(key); }
+
+        private static string Unprotect(string secret)
         {
-            if (string.IsNullOrEmpty(NexusSecret)) return "";
+            if (string.IsNullOrEmpty(secret)) return "";
             try
             {
-                return Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(NexusSecret), null, DataProtectionScope.CurrentUser));
+                return Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(secret), null, DataProtectionScope.CurrentUser));
             }
             catch (CryptographicException) { return ""; }
             catch (FormatException) { return ""; }
@@ -91,9 +96,14 @@ namespace Lug
 
         internal void SetKey(string key, string name, bool premium)
         {
-            NexusSecret = key.Length == 0 ? "" : Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(key), null, DataProtectionScope.CurrentUser));
+            NexusSecret = Protect(key);
             NexusName = name;
             Premium = premium;
+        }
+
+        private static string Protect(string key)
+        {
+            return key.Length == 0 ? "" : Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(key), null, DataProtectionScope.CurrentUser));
         }
     }
 
