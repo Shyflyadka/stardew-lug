@@ -1,0 +1,46 @@
+name: Publish Lug 1.6.1
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-1.6.1.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-lug-1.6.1
+
+jobs:
+  package:
+    if: github.repository == 'Shyflyadka/stardew-lug'
+    runs-on: windows-2022
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: v1.6.1
+      SOURCE_COMMIT: b09c5aad65231c0f1c15f0a9653a5c5a6e2e8afe
+    steps:
+      - name: Build and check the Windows archive
+        shell: pwsh
+        run: |
+          git init .
+          git fetch --depth=1 "https://github.com/$env:GITHUB_REPOSITORY.git" $env:SOURCE_COMMIT
+          git checkout --detach FETCH_HEAD
+          & ./build.ps1
+          $assembly = [Reflection.AssemblyName]::GetAssemblyName((Resolve-Path ./StardewLug.exe).Path)
+          if ($assembly.Name -ne 'StardewLug' -or $assembly.Version -ne [version]'1.6.1.0') {
+              throw 'The executable does not match release v1.6.1.'
+          }
+          Compress-Archive -LiteralPath 'StardewLug.exe', 'README.md', 'build.ps1', 'lug.ico', 'src' -DestinationPath 'Stardew-Lug.zip'
+          Get-FileHash -Algorithm SHA256 -LiteralPath 'Stardew-Lug.zip'
+      - name: Publish the stable release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:RELEASE_TAG 'Stardew-Lug.zip' `
+              --repo $env:GITHUB_REPOSITORY --target $env:SOURCE_COMMIT --latest `
+              --title 'Луг 1.6.1' `
+              --notes 'Кнопка «Опубликовать сборку» теперь видна вверху обеих вкладок раздела «Сборки». При первой публикации Луг попросит репозиторий и токен GitHub. Игроки могут скачать и установить сборку в «Публичных сборках» без аккаунта GitHub.'
